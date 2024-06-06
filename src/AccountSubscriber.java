@@ -3,10 +3,10 @@ import java.util.concurrent.Flow;
 
 class AccountSubscriber<T> implements Flow.Subscriber<T> {
     private final String subscriberName;
-    private final CompletableFuture<Void> future;
+    private final CompletableFuture<String> future;
     private Flow.Subscription subscription;
 
-    public AccountSubscriber(String subscriberName, CompletableFuture<Void> future) {
+    public AccountSubscriber(String subscriberName, CompletableFuture<String> future) {
         this.subscriberName = subscriberName;
         this.future = future;
     }
@@ -32,7 +32,8 @@ class AccountSubscriber<T> implements Flow.Subscriber<T> {
 
     private void generateReportForAccount(T accountNumber) {
         // Simulate a longer processing time for Wells345 to demonstrate async processing
-        long sleepTime = "Wells345".equals(accountNumber) ? 15000 : 1500;
+//        long sleepTime = "Wells345".equals(accountNumber) ? 15000 : 1500;
+        long sleepTime = 500;
         System.out.println(Thread.currentThread().getName() + " >> Generating report for account: " + accountNumber );
 
         try {
@@ -53,7 +54,8 @@ class AccountSubscriber<T> implements Flow.Subscriber<T> {
 
     @Override
     public void onComplete() {
+        future.complete("Completed");
         System.out.println(Thread.currentThread().getName() + " >> " + subscriberName + " has completed");
-        future.complete(null);
+        System.out.println("All account reports have been generated");
     }
 }
