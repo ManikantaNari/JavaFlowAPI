@@ -1,14 +1,17 @@
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class AccountSubscriber<T> implements Flow.Subscriber<T> {
     private final String subscriberName;
     private final CompletableFuture<Void> future;
+    private final AtomicInteger remainingCount;
     private Flow.Subscription subscription;
 
-    public AccountSubscriber(String subscriberName, CompletableFuture<Void> future) {
+    public AccountSubscriber(String subscriberName, int totalCount, CompletableFuture<Void> future) {
         this.subscriberName = subscriberName;
         this.future = future;
+        this.remainingCount = new AtomicInteger(totalCount);
     }
 
     @Override
@@ -19,15 +22,18 @@ class AccountSubscriber<T> implements Flow.Subscriber<T> {
 
     @Override
     public void onNext(T item) {
-        try {
-            System.out.println(Thread.currentThread().getName() + " >> " + subscriberName + " received item: " + item);
-            // Simulate report generation for the account number
-            generateReportForAccount(item);
-        } catch (Exception ex) {
-            System.out.println(ex.getMessage());
-        } finally {
-                subscription.request(1); // Request the next item
-        }
+        CompletableFuture.runAsync(() -> {
+            try {
+                System.out.println(Thread.currentThread().getName() + " >> " + subscriberName + " received item: " + item);
+                // Simulate report generation for the account number
+                generateReportForAccount(item);
+            } catch (Exception ex) {
+                System.out.println(ex.getMessage());
+            }
+        });
+
+        // Request the next item
+        subscription.request(1);
     }
 
     private void generateReportForAccount(T accountNumber) {
@@ -42,6 +48,10 @@ class AccountSubscriber<T> implements Flow.Subscriber<T> {
         }
 
         System.out.println(Thread.currentThread().getName() + " >> Report generated for account: " + accountNumber + " (sleepTime: " + sleepTime + " ms)");
+
+        if (remainingCount.decrementAndGet() == 0) {
+            future.complete(null);
+        }
     }
 
     @Override
@@ -54,6 +64,6 @@ class AccountSubscriber<T> implements Flow.Subscriber<T> {
     @Override
     public void onComplete() {
         System.out.println(Thread.currentThread().getName() + " >> " + subscriberName + " has completed");
-        future.complete(null);
+        System.out.println("All account reports have been generated");
     }
 }
