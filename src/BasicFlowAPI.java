@@ -1,6 +1,5 @@
 import java.util.concurrent.*;
 import java.util.List;
-import java.util.concurrent.Flow.*;
 
 public class BasicFlowAPI {
     public static void main(String[] args) {
@@ -10,19 +9,16 @@ public class BasicFlowAPI {
 
         AccountSubscriber<String> accountSubscriber = new AccountSubscriber<>("Subscriber1", future);
 
-        SubmissionPublisher<String> accountPublisher = new SubmissionPublisher<>();
+        try (SubmissionPublisher<String> accountPublisher = new SubmissionPublisher<>()) {
+            accountPublisher.subscribe(accountSubscriber);
 
-        accountPublisher.subscribe(accountSubscriber);
+            accountNumberList.forEach(accountNumber -> {
+                System.out.println(Thread.currentThread().getName() + " Publishing item: " + accountNumber);
+                accountPublisher.submit(accountNumber);
+            });
 
-        accountNumberList.forEach(accountNumber -> {
-            System.out.println(Thread.currentThread().getName() + " Publishing item: " + accountNumber);
-            accountPublisher.submit(accountNumber);
-        });
-
-        accountPublisher.close();
-
-        future.join(); // Wait for the future to complete
-
-        System.out.println("All account reports have been generated");
+            future.join(); // Wait for the future to complete
+            System.out.println("All account reports have been generated");
+        }
     }
 }

@@ -1,14 +1,18 @@
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Flow;
 
 class AccountSubscriber<T> implements Flow.Subscriber<T> {
     private final String subscriberName;
     private final CompletableFuture<Void> future;
+    private final ExecutorService executorService;
     private Flow.Subscription subscription;
 
     public AccountSubscriber(String subscriberName, CompletableFuture<Void> future) {
         this.subscriberName = subscriberName;
         this.future = future;
+        this.executorService = Executors.newFixedThreadPool(10); // Adjust based on your requirements
     }
 
     @Override
@@ -19,21 +23,24 @@ class AccountSubscriber<T> implements Flow.Subscriber<T> {
 
     @Override
     public void onNext(T item) {
-        try {
-            System.out.println(Thread.currentThread().getName() + " >> " + subscriberName + " received item: " + item);
-            // Simulate report generation for the account number
-            generateReportForAccount(item);
-        } catch (Exception ex) {
-            System.out.println(ex.getMessage());
-        } finally {
-                subscription.request(1); // Request the next item
-        }
+        CompletableFuture.runAsync(() -> {
+            try {
+                System.out.println(Thread.currentThread().getName() + " >> " + subscriberName + " received item: " + item);
+                // Simulate report generation for the account number
+                generateReportForAccount(item);
+            } catch (Exception ex) {
+                System.out.println(ex.getMessage());
+            }
+        }, executorService);
+
+        // Request the next item
+        subscription.request(1);
     }
 
     private void generateReportForAccount(T accountNumber) {
-        // Simulate a longer processing time for Wells345 to demonstrate async processing
+        // Simulate a longer processing time for Wells345
         long sleepTime = "Wells345".equals(accountNumber) ? 15000 : 1500;
-        System.out.println(Thread.currentThread().getName() + " >> Generating report for account: " + accountNumber );
+        System.out.println(Thread.currentThread().getName() + " >> Generating report for account: " + accountNumber);
 
         try {
             Thread.sleep(sleepTime); // Simulate time taken to generate the report
