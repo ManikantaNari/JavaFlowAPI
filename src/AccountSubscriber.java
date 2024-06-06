@@ -38,7 +38,8 @@ class AccountSubscriber<T> implements Flow.Subscriber<T> {
 
     private void generateReportForAccount(T accountNumber) {
         // Simulate a longer processing time for Wells345 to demonstrate async processing
-        long sleepTime = "Wells345".equals(accountNumber) ? 15000 : 1500;
+//        long sleepTime = "Wells345".equals(accountNumber) ? 15000 : 1500;
+        long sleepTime = 100;
         System.out.println(Thread.currentThread().getName() + " >> Generating report for account: " + accountNumber );
 
         try {
