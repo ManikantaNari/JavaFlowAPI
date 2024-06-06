@@ -1,25 +1,22 @@
-import java.util.concurrent.Flow.*;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 
-public class AccountSubscriber<T> implements Subscriber<T> {
+class AccountSubscriber<T> implements Flow.Subscriber<T> {
     private final String subscriberName;
-    private final CountDownLatch latch;
-    private Subscription subscription;
+    private final CompletableFuture<Void> future;
+    private Flow.Subscription subscription;
 
-    // Constructor that initializes the subscriber name and latch
-    public AccountSubscriber(String subscriberName, CountDownLatch latch) {
+    public AccountSubscriber(String subscriberName, CompletableFuture<Void> future) {
         this.subscriberName = subscriberName;
-        this.latch = latch;
+        this.future = future;
     }
 
-    // Called when the subscriber is subscribed to the publisher
     @Override
-    public void onSubscribe(Subscription subscription) {
+    public void onSubscribe(Flow.Subscription subscription) {
         this.subscription = subscription;
-        subscription.request(1); // Request one item at a time to avoid overwhelming the system
+        subscription.request(1); // Requesting one item at a time initially
     }
 
-    // Called when the next item is available
     @Override
     public void onNext(T item) {
         try {
@@ -29,33 +26,34 @@ public class AccountSubscriber<T> implements Subscriber<T> {
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
         } finally {
-            subscription.request(1); // Request the next item
+                subscription.request(1); // Request the next item
         }
     }
 
-    // Simulates the report generation process for the account number
     private void generateReportForAccount(T accountNumber) {
-        System.out.println(Thread.currentThread().getName() + " >> Generating report for account: " + accountNumber);
+        // Simulate a longer processing time for Wells345 to demonstrate async processing
+        long sleepTime = "Wells345".equals(accountNumber) ? 15000 : 1500;
+        System.out.println(Thread.currentThread().getName() + " >> Generating report for account: " + accountNumber );
+
         try {
-            Thread.sleep(500); // Simulate time taken to generate the report
+            Thread.sleep(sleepTime); // Simulate time taken to generate the report
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        System.out.println(Thread.currentThread().getName() + " >> Report generated for account: " + accountNumber);
+
+        System.out.println(Thread.currentThread().getName() + " >> Report generated for account: " + accountNumber + " (sleepTime: " + sleepTime + " ms)");
     }
 
-    // Called when an error occurs
     @Override
     public void onError(Throwable throwable) {
         System.out.println("Error while processing the item");
         throwable.printStackTrace();
-        latch.countDown(); // Decrement the latch to signal completion
+        future.completeExceptionally(throwable);
     }
 
-    // Called when all items have been processed
     @Override
     public void onComplete() {
         System.out.println(Thread.currentThread().getName() + " >> " + subscriberName + " has completed");
-        latch.countDown(); // Decrement the latch to signal completion
+        future.complete(null);
     }
 }
