@@ -28,7 +28,7 @@ class AccountSubscriber<T> implements Flow.Subscriber<T> {
                 // Simulate report generation for the account number
                 generateReportForAccount(item);
             } catch (Exception ex) {
-                System.out.println(ex.getMessage());
+                onError(ex);
             }
         });
 
@@ -39,6 +39,9 @@ class AccountSubscriber<T> implements Flow.Subscriber<T> {
     private void generateReportForAccount(T accountNumber) {
         // Simulate a longer processing time for Wells345 to demonstrate async processing
 //        long sleepTime = "Wells345".equals(accountNumber) ? 15000 : 1500;
+        if ("Wells345".equals(accountNumber)||"Wells789".equals(accountNumber)) {
+            throw new RuntimeException("Error processing account: " + accountNumber);
+        }
         long sleepTime = 100;
         System.out.println(Thread.currentThread().getName() + " >> Generating report for account: " + accountNumber );
 
@@ -58,7 +61,7 @@ class AccountSubscriber<T> implements Flow.Subscriber<T> {
     @Override
     public void onError(Throwable throwable) {
         System.out.println("Error while processing the item");
-        throwable.printStackTrace();
+//        throwable.printStackTrace();
         future.completeExceptionally(throwable);
     }
 
